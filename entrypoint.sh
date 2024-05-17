@@ -21,6 +21,11 @@ if [ -n "$HEAD_BRANCH" ]; then
   args="$args -h $HEAD_BRANCH"
 fi
 
+# pass force flag from FORCE_PUSH environment variable if it exists
+if [ -n "$FORCE_PUSH" ]; then
+  args="$args -f"
+fi
+
 # pass message flag from COMMIT_MSG environment variable if it exists
 if [ -n "$COMMIT_MSG" ]; then
   args="$args -m $COMMIT_MSG"

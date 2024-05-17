@@ -225,13 +225,7 @@ func CommitAndPush(repo GitHubRepo, commit GitCommit) {
 	// force push if required
 	if commit.Options.Force {
 		refReq.Force = true
-		fmt.Println("Force pushing commit")
 	}
-	result, err := json.Marshal(refReq)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(result))
 	refResp, err := UpdateReference(refReq, commit.Branch, false)
 	if err != nil {
 		panic(err)

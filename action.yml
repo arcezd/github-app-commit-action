@@ -18,6 +18,10 @@ inputs:
     description: 'Commit message'
     required: false
     default: 'chore: autopublish ${date}'
+  force-push:
+    description: 'Force push to the branch'
+    required: false
+    default: 'false'
   add-new-files:
     description: 'Add new files to the commit'
     required: false
@@ -39,5 +43,6 @@ runs:
     BRANCH: ${{ inputs.branch }}
     HEAD_BRANCH: ${{ inputs.head }}
     COMMIT_MSG: ${{ inputs.message }}
+    FORCE_PUSH: ${{ inputs.force-push }}
     ADD_NEW_FILES: ${{ inputs.add-new-files }}
     COAUTHORS: ${{ inputs.coauthors }}
