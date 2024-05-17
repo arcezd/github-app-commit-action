@@ -1,3 +1,14 @@
+## v1.1.6 (2024-05-17)
+
+### Fix
+
+- **clean**: refactor code for debugging
+- **cmd**: improve commands execution
+- **safedir**: git safe directory
+- **test**: add better command logs
+- **test**: list files on folder
+- **cmd**: log command dir
+
 ## v1.1.5 (2024-05-17)
 
 ### Fix

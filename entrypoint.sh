@@ -44,4 +44,5 @@ if [ -n "$COAUTHORS" ]; then
   args="$args -c $COAUTHORS"
 fi
 
+/bin/action -version
 /bin/action $args
