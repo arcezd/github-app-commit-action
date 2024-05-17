@@ -1,3 +1,9 @@
+## v1.1.2 (2024-05-17)
+
+### Fix
+
+- **vars**: rename GITHUB env vars
+
 ## v1.1.1 (2024-05-16)
 
 ### Fix
