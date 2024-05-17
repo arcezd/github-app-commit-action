@@ -1,3 +1,9 @@
+## v1.1.3 (2024-05-17)
+
+### Fix
+
+- **key**: switch private key to action input
+
 ## v1.1.2 (2024-05-17)
 
 ### Fix

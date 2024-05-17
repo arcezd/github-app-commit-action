@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	BuildVersion = "v1.1.2"
+	BuildVersion = "v1.1.3"
 )
 
 const (
