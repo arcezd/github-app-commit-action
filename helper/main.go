@@ -152,14 +152,6 @@ func CommitAndPush(repo GitHubRepo, commit GitCommit) {
 
 	// get files to commit
 	var files []string
-	// list files from dir
-	filesInfo, err := ListFiles(nil)
-	if err != nil {
-		panic(err)
-	}
-	for _, file := range filesInfo {
-		fmt.Println(file.Name)
-	}
 	if commit.Options.AddNewFiles {
 		files, err = GetModifiedAndNewFiles()
 	} else {
