@@ -9,6 +9,9 @@ RUN go build -o action .
 # Container image that runs your code
 FROM alpine:3.18
 
+# Install required packages
+RUN apk add --no-cache git
+
 COPY entrypoint.sh /bin/entrypoint.sh
 COPY --from=builder /out/action /bin/action
 
