@@ -1,3 +1,9 @@
+## v1.1.4 (2024-05-17)
+
+### Fix
+
+- **docker**: add git package required
+
 ## v1.1.3 (2024-05-17)
 
 ### Fix
