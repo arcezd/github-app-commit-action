@@ -1,0 +1,43 @@
+linters:
+  enable:
+  - decorder
+  - goconst
+  - godox
+  - gosec
+  - whitespace
+  - wsl
+linters-settings:
+  decorder:
+    # Required order of `type`, `const`, `var` and `func` declarations inside a file.
+    # Default: types before constants before variables before functions.
+    dec-order:
+    - type
+    - const
+    - var
+    - func
+  goconst:
+    # Minimum occurrences of a substring to be considered a constant.
+    min-len: 2
+    # Minimum occurrences of a substring in the whole project to be considered a constant.
+    min-occurrences: 2
+  unconvert:
+    # Remove conversions that force intermediate rounding.
+    # Default: false
+    fast-math: true
+    # Be more conservative (experimental).
+    # Default: false
+    safe: true
+  whitespace:
+    # Enforces newlines (or comments) after every multi-line if statement.
+    multi-if: true
+    # Enforces newlines (or comments) after every multi-line function signature.
+    multi-func: true
+  wsl:
+    # See https://github.com/bombsimon/wsl/blob/master/doc/configuration.md for documentation of available settings.
+    # These are the defaults for `golangci-lint`.
+    allow-cuddle-declarations: true
+
+    # Do strict checking when assigning from append (x = append(x, y)). If
+    # this is set to true - the append call must append either a variable
+    # assigned, called or used on the line above.
+    strict-append: true

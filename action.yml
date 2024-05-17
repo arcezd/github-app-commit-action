@@ -1,0 +1,43 @@
+# action.yml
+name: 'GitHub app commit and push'
+description: 'Create a commit and push to a GitHub repository'
+inputs:
+  github-app-private-key-file:
+    description: 'The private key pem file path of the GitHub App'
+    required: false
+  repository:
+    description: 'The repository to commit and push to'
+    required: true
+  branch:
+    description: 'The branch to commit and push to'
+    required: true
+  head:
+    description: 'The head branch to commit and push from'
+    required: false
+  message:
+    description: 'Commit message'
+    required: false
+    default: 'chore: autopublish ${date}'
+  add-new-files:
+    description: 'Add new files to the commit'
+    required: false
+    default: 'true'
+  coauthors:
+    description: 'Coauthors to add to the commit'
+    required: false
+    default: ''
+outputs:
+  sha: # id of output
+    description: 'Commit SHA'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    GITHUB_APP_PRIVATE_KEY: ${{ env.GITHUB_APP_PRIVATE_KEY }}
+    GITHUB_APP_PRIVATE_KEY_FILE: ${{ inputs.github-app-private-key-file }}
+    REPOSITORY: ${{ inputs.repository }}
+    BRANCH: ${{ inputs.branch }}
+    HEAD_BRANCH: ${{ inputs.head }}
+    COMMIT_MSG: ${{ inputs.message }}
+    ADD_NEW_FILES: ${{ inputs.add-new-files }}
+    COAUTHORS: ${{ inputs.coauthors }}
