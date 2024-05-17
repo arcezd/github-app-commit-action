@@ -14,18 +14,18 @@ import (
 )
 
 var (
-	BuildVersion = "v1.0.0"
+	BuildVersion = "v1.1.0"
 )
 
 const (
 	// github pem env var
-	githubAppPrivateKeyEnvVar = "GITHUB_APP_PRIVATE_KEY"
+	githubAppPrivateKeyEnvVar = "GH_APP_PRIVATE_KEY"
 	defaultCommitMessage      = "chore: autopublish ${date}"
 )
 
 func main() {
 	var branch, headBranch, repository, privateKeyPemFilename, commitMsg, coauthors string
-	var version, help, addNewFiles bool
+	var version, help, force, addNewFiles bool
 
 	// parse flags
 	flag.BoolVar(&help, "help", false, "CLI help")
@@ -37,6 +37,7 @@ func main() {
 	flag.StringVar(&commitMsg, "m", defaultCommitMessage, "Commit message")
 	flag.StringVar(&coauthors, "c", "", "Coauthors in the format 'Name1 <email1>, Name2 <email2>'")
 	flag.BoolVar(&addNewFiles, "a", true, "Add new files to the commit")
+	flag.BoolVar(&force, "f", false, "Force push to the branch")
 	flag.Parse()
 
 	if help {
@@ -135,6 +136,7 @@ func main() {
 			//OnBehalfOf: &onBehalfOf,
 			Options: gh.CommitOptions{
 				AddNewFiles: addNewFiles,
+				Force:       force,
 			},
 		},
 	)

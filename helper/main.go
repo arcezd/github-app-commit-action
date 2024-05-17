@@ -20,6 +20,7 @@ type GitUser struct {
 
 type CommitOptions struct {
 	AddNewFiles        bool
+	Force              bool
 	RemoveDeletedFiles bool
 }
 
@@ -221,6 +222,16 @@ func CommitAndPush(repo GitHubRepo, commit GitCommit) {
 	refReq := GithubRefRequest{
 		Sha: commitResp.Sha,
 	}
+	// force push if required
+	if commit.Options.Force {
+		refReq.Force = true
+		fmt.Println("Force pushing commit")
+	}
+	result, err := json.Marshal(refReq)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(result))
 	refResp, err := UpdateReference(refReq, commit.Branch, false)
 	if err != nil {
 		panic(err)
