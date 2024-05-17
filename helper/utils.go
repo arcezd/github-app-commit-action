@@ -1,6 +1,7 @@
 package github_helper
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -13,9 +14,9 @@ func ListFiles(dir *string) error {
 	if dir != nil {
 		cmd.Dir = *dir
 	}
-	output, err := cmd.CombinedOutput()
+	output, err := cmd.Output()
 	if err != nil {
-		fmt.Printf("Error during 'ListFiles' - Path %s - :%s\n", cmd.Dir, err)
+		fmt.Printf("Error during 'ListFiles' - Path %s - %s, :%s\n", cmd.Dir, cmd.Stderr, err)
 		return err
 	}
 	fmt.Printf("ListFiles - Path %s - :%s\n", cmd.Dir, string(output))
@@ -24,11 +25,22 @@ func ListFiles(dir *string) error {
 
 func StageModifiedAndNewFiles() error {
 	cmd := exec.Command("git", "add", "-A")
-	_, err := cmd.CombinedOutput()
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	output, err := cmd.Output()
 	if err != nil {
-		fmt.Printf("Error during 'StageModifiedAndNewFiles' - Path %s - :%s\n", cmd.Dir, err)
-		return err
+		fmt.Printf("-----------------------------\n")
+		fmt.Printf("Error during 'StageModifiedAndNewFiles'\n")
+		fmt.Printf("Path: %s\n", cmd.Dir)
+		fmt.Printf("Stderr: %s\n", stderr.String())
+		fmt.Printf("Error: %s\n", err)
+		fmt.Printf("-----------------------------\n")
+		panic(err)
 	}
+
+	fmt.Printf("Output: %s\n", output) // TODO: remove
 	return nil
 }
 
