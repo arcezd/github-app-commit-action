@@ -88,7 +88,8 @@ func main() {
 		// sign the JWT token with the private key from the filename
 		gh.SignJWTAppTokenWithFilename(privateKeyPemFilename)
 	} else {
-		panic("You need to provide a private key in the environment variable GITHUB_APP_PRIVATE_KEY or a filename with the -p flag")
+		errMsg := fmt.Sprintf("You need to provide a private key in the environment variable %s or a filename with the -p flag", githubAppPrivateKeyEnvVar)
+		panic(errMsg)
 	}
 
 	// parse coauthors

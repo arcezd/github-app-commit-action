@@ -1,9 +1,9 @@
 #!/bin/sh
 args="$@"
 
-# pass pem file flag from GITHUB_APP_PRIVATE_KEY_FILE environment variable if it exists
-if [ -n "$GITHUB_APP_PRIVATE_KEY_FILE" ]; then
-  args="$args -p $GITHUB_APP_PRIVATE_KEY_FILE"
+# pass pem file flag from GH_APP_PRIVATE_KEY_FILE environment variable if it exists
+if [ -n "$GH_APP_PRIVATE_KEY_FILE" ]; then
+  args="$args -p $GH_APP_PRIVATE_KEY_FILE"
 fi
 
 # pass repository flag from REPOSITORY environment variable if it exists

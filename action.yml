@@ -37,8 +37,8 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   env:
-    GITHUB_APP_PRIVATE_KEY: ${{ env.GITHUB_APP_PRIVATE_KEY }}
-    GITHUB_APP_PRIVATE_KEY_FILE: ${{ inputs.github-app-private-key-file }}
+    GH_APP_PRIVATE_KEY: ${{ env.GH_APP_PRIVATE_KEY }}
+    GH_APP_PRIVATE_KEY_FILE: ${{ inputs.github-app-private-key-file }}
     REPOSITORY: ${{ inputs.repository }}
     BRANCH: ${{ inputs.branch }}
     HEAD_BRANCH: ${{ inputs.head }}
