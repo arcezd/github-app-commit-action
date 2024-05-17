@@ -2,6 +2,9 @@
 name: 'GitHub app commit and push'
 description: 'Create a commit and push to a GitHub repository'
 inputs:
+  github-app-private-key:
+    description: 'The private key pem content of the GitHub App'
+    required: false
   github-app-private-key-file:
     description: 'The private key pem file path of the GitHub App'
     required: false
@@ -37,7 +40,7 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   env:
-    GH_APP_PRIVATE_KEY: ${{ env.GH_APP_PRIVATE_KEY }}
+    GH_APP_PRIVATE_KEY: ${{ inputs.github-app-private-key }}
     GH_APP_PRIVATE_KEY_FILE: ${{ inputs.github-app-private-key-file }}
     REPOSITORY: ${{ inputs.repository }}
     BRANCH: ${{ inputs.branch }}
