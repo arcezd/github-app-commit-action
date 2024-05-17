@@ -8,6 +8,20 @@ import (
 	"strings"
 )
 
+func ListFiles(dir *string) error {
+	cmd := exec.Command("ls", "-al")
+	if dir != nil {
+		cmd.Dir = *dir
+	}
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("Error during 'ListFiles' - Path %s - :%s\n", cmd.Dir, err)
+		return err
+	}
+	fmt.Printf("ListFiles - Path %s - :%s\n", cmd.Dir, string(output))
+	return nil
+}
+
 func StageModifiedAndNewFiles() error {
 	cmd := exec.Command("git", "add", "-A")
 	_, err := cmd.CombinedOutput()

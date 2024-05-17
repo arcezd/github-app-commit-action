@@ -152,6 +152,8 @@ func CommitAndPush(repo GitHubRepo, commit GitCommit) {
 
 	// get files to commit
 	var files []string
+	// list files from dir
+	ListFiles(nil)
 	if commit.Options.AddNewFiles {
 		files, err = GetModifiedAndNewFiles()
 	} else {
