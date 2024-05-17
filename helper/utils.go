@@ -12,7 +12,7 @@ func StageModifiedAndNewFiles() error {
 	cmd := exec.Command("git", "add", "-A")
 	_, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println("Error StageModifiedAndNewFiles:", err)
+		fmt.Printf("Error during 'StageModifiedAndNewFiles' - Path %s - :%s\n", cmd.Dir, err)
 		return err
 	}
 	return nil
@@ -22,7 +22,7 @@ func StageModifiedFiles() error {
 	cmd := exec.Command("git", "add", "-u")
 	_, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println("Error StageModifiedFiles:", err)
+		fmt.Printf("Error during 'StageModifiedFiles' - Path %s - :%s\n", cmd.Dir, err)
 		return err
 	}
 	return nil
@@ -55,7 +55,7 @@ func GetModifiedFilesFromGitDiff(fromStaged bool) ([]string, error) {
 	cmd := exec.Command("git", cmdArgs...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println("Error GetModifiedFilesFromGitDiff:", err)
+		fmt.Printf("Error during 'GetModifiedFilesFromGitDiff' - Path %s - :%s\n", cmd.Dir, err)
 		return modfiles, err
 	}
 
