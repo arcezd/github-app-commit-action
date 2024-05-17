@@ -1,28 +1,69 @@
 package github_helper
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 )
 
-func StageModifiedAndNewFiles() error {
-	cmd := exec.Command("git", "add", "-A")
-	_, err := cmd.CombinedOutput()
+type FileInfo struct {
+	Permissions string
+	Number      string
+	Owner       string
+	Group       string
+	Size        string
+	Month       string
+	Day         string
+	Time        string
+	Name        string
+}
+
+func ListFiles(dir *string) ([]FileInfo, error) {
+	output, err := executeCommand("ls", "-al")
 	if err != nil {
-		fmt.Println("Error StageModifiedAndNewFiles:", err)
+		return nil, err
+	}
+	lines := strings.Split(string(output), "\n")
+	var files []FileInfo
+
+	for _, line := range lines[1:] {
+		re := regexp.MustCompile(`(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.+)`)
+		match := re.FindStringSubmatch(line)
+
+		if len(match) == 0 {
+			continue
+		}
+
+		files = append(files, FileInfo{
+			Permissions: match[1],
+			Number:      match[2],
+			Owner:       match[3],
+			Group:       match[4],
+			Size:        match[5],
+			Month:       match[6],
+			Day:         match[7],
+			Time:        match[8],
+			Name:        match[9],
+		})
+	}
+	return files, nil
+}
+
+func StageModifiedAndNewFiles() error {
+	_, err := executeCommand("git", "add", "-A")
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
 func StageModifiedFiles() error {
-	cmd := exec.Command("git", "add", "-u")
-	_, err := cmd.CombinedOutput()
+	_, err := executeCommand("git", "add", "-u")
 	if err != nil {
-		fmt.Println("Error StageModifiedFiles:", err)
 		return err
 	}
 	return nil
@@ -55,7 +96,7 @@ func GetModifiedFilesFromGitDiff(fromStaged bool) ([]string, error) {
 	cmd := exec.Command("git", cmdArgs...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println("Error GetModifiedFilesFromGitDiff:", err)
+		fmt.Printf("Error during 'GetModifiedFilesFromGitDiff' - Path %s - :%s\n", cmd.Dir, err)
 		return modfiles, err
 	}
 
@@ -79,6 +120,26 @@ func SendToGHActionsOutput(variable string, output string) {
 	if IsGitHubActions() {
 		writeToGHActionsVar(os.Getenv("GITHUB_OUTPUT"), fmt.Sprintf("%s=%s", variable, output))
 	}
+}
+
+func executeCommand(command string, args ...string) ([]byte, error) {
+	cmd := exec.Command(command, args...)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Printf("-----------------------------\n")
+		fmt.Printf("Error during 'StageModifiedAndNewFiles'\n")
+		fmt.Printf("Path: %s\n", cmd.Dir)
+		fmt.Printf("Stderr: %s\n", stderr.String())
+		fmt.Printf("Error: %s\n", err)
+		fmt.Printf("-----------------------------\n")
+		return nil, err
+	}
+
+	return output, nil
 }
 
 func writeToGHActionsVar(name string, value string) {
