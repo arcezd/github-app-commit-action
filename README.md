@@ -5,12 +5,12 @@ This GH action allow you to sign your commits with a Github App
 | Variable | Description | Type |
 | -------- | ----------- | ---- |
 | `github-app-private-key-file` | The Github App private key filename. | `string` |
-| `repository` | **Required**. The private key of the Github App | `string` |
-| `branch` | **Required**. The private key of the Github App | `string` |
-| `head` | **Required**. The private key of the Github App | `string` |
-| `message` | **Required**. The private key of the Github App | `string` |
-| `add-new-files` | **Required**. The private key of the Github App | `string` |
-| `coauthors` | **Required**. The private key of the Github App | `string` |
+| `repository` | **Required**. GitHub repository in the format owner/repo | `string` |
+| `branch` | Target branch to commit to (default "main")| `string` |
+| `head` | head branch to commit from. Default is the same as branch | `string` |
+| `message` | Commit message (default "chore: autopublish ${date}") | `string` |
+| `add-new-files` | Add new files to the commit. (default true) | `bool` |
+| `coauthors` | Coauthors in the format 'Name1 <email1>, Name2 <email2>' | `string` |
 
 ## Example usage
 ```yaml

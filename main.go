@@ -36,7 +36,7 @@ func main() {
 	flag.StringVar(&privateKeyPemFilename, "p", "", fmt.Sprintf("Path to the private key pem file. %s env variable has priority over this", githubAppPrivateKeyEnvVar))
 	flag.StringVar(&commitMsg, "m", defaultCommitMessage, "Commit message")
 	flag.StringVar(&coauthors, "c", "", "Coauthors in the format 'Name1 <email1>, Name2 <email2>'")
-	flag.BoolVar(&addNewFiles, "a", true, "Add new files to the commit. Default is true")
+	flag.BoolVar(&addNewFiles, "a", true, "Add new files to the commit")
 	flag.Parse()
 
 	if help {
