@@ -1,6 +1,9 @@
 #!/bin/sh
 args="$@"
 
+# set safe.directory to the current working directory
+sh -c "git config --global --add safe.directory $PWD"
+
 # pass pem file flag from GH_APP_PRIVATE_KEY_FILE environment variable if it exists
 if [ -n "$GH_APP_PRIVATE_KEY_FILE" ]; then
   args="$args -p $GH_APP_PRIVATE_KEY_FILE"
