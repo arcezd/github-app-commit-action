@@ -6,49 +6,64 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 )
 
-func ListFiles(dir *string) error {
-	cmd := exec.Command("ls", "-al")
-	if dir != nil {
-		cmd.Dir = *dir
-	}
-	output, err := cmd.Output()
+type FileInfo struct {
+	Permissions string
+	Number      string
+	Owner       string
+	Group       string
+	Size        string
+	Month       string
+	Day         string
+	Time        string
+	Name        string
+}
+
+func ListFiles(dir *string) ([]FileInfo, error) {
+	output, err := executeCommand("ls", "-al")
 	if err != nil {
-		fmt.Printf("Error during 'ListFiles' - Path %s - %s, :%s\n", cmd.Dir, cmd.Stderr, err)
-		return err
+		return nil, err
 	}
-	fmt.Printf("ListFiles - Path %s - :%s\n", cmd.Dir, string(output))
-	return nil
+	lines := strings.Split(string(output), "\n")
+	var files []FileInfo
+
+	for _, line := range lines[1:] {
+		re := regexp.MustCompile(`(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(.+)`)
+		match := re.FindStringSubmatch(line)
+
+		if len(match) == 0 {
+			continue
+		}
+
+		files = append(files, FileInfo{
+			Permissions: match[1],
+			Number:      match[2],
+			Owner:       match[3],
+			Group:       match[4],
+			Size:        match[5],
+			Month:       match[6],
+			Day:         match[7],
+			Time:        match[8],
+			Name:        match[9],
+		})
+	}
+	return files, nil
 }
 
 func StageModifiedAndNewFiles() error {
-	cmd := exec.Command("git", "add", "-A")
-
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	output, err := cmd.Output()
+	_, err := executeCommand("git", "add", "-A")
 	if err != nil {
-		fmt.Printf("-----------------------------\n")
-		fmt.Printf("Error during 'StageModifiedAndNewFiles'\n")
-		fmt.Printf("Path: %s\n", cmd.Dir)
-		fmt.Printf("Stderr: %s\n", stderr.String())
-		fmt.Printf("Error: %s\n", err)
-		fmt.Printf("-----------------------------\n")
-		panic(err)
+		return err
 	}
-
-	fmt.Printf("Output: %s\n", output) // TODO: remove
 	return nil
 }
 
 func StageModifiedFiles() error {
-	cmd := exec.Command("git", "add", "-u")
-	_, err := cmd.CombinedOutput()
+	_, err := executeCommand("git", "add", "-u")
 	if err != nil {
-		fmt.Printf("Error during 'StageModifiedFiles' - Path %s - :%s\n", cmd.Dir, err)
 		return err
 	}
 	return nil
@@ -105,6 +120,26 @@ func SendToGHActionsOutput(variable string, output string) {
 	if IsGitHubActions() {
 		writeToGHActionsVar(os.Getenv("GITHUB_OUTPUT"), fmt.Sprintf("%s=%s", variable, output))
 	}
+}
+
+func executeCommand(command string, args ...string) ([]byte, error) {
+	cmd := exec.Command(command, args...)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Printf("-----------------------------\n")
+		fmt.Printf("Error during 'StageModifiedAndNewFiles'\n")
+		fmt.Printf("Path: %s\n", cmd.Dir)
+		fmt.Printf("Stderr: %s\n", stderr.String())
+		fmt.Printf("Error: %s\n", err)
+		fmt.Printf("-----------------------------\n")
+		return nil, err
+	}
+
+	return output, nil
 }
 
 func writeToGHActionsVar(name string, value string) {
