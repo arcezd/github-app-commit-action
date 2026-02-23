@@ -94,3 +94,5 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+github-app-commit-action

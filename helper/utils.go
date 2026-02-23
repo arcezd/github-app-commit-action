@@ -27,6 +27,7 @@ func ListFiles(dir *string) ([]FileInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	lines := strings.Split(string(output), "\n")
 	var files []FileInfo
 
@@ -50,6 +51,7 @@ func ListFiles(dir *string) ([]FileInfo, error) {
 			Name:        match[9],
 		})
 	}
+
 	return files, nil
 }
 
@@ -58,6 +60,7 @@ func StageModifiedAndNewFiles() error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -66,37 +69,43 @@ func StageModifiedFiles() error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func GetModifiedAndNewFiles() ([]string, error) {
 	var modfiles []string
+
 	err := StageModifiedAndNewFiles()
 	if err != nil {
 		return modfiles, err
 	}
+
 	return GetModifiedFilesFromGitDiff(true)
 }
 
 func GetModifiedFiles() ([]string, error) {
 	var modfiles []string
+
 	err := StageModifiedFiles()
 	if err != nil {
 		return modfiles, err
 	}
+
 	return GetModifiedFilesFromGitDiff(true)
 }
 
 func GetModifiedFilesFromGitDiff(fromStaged bool) ([]string, error) {
 	var modfiles []string
+
 	cmdArgs := []string{"diff", "--name-only"}
 	if fromStaged {
 		cmdArgs = append(cmdArgs, "--cached")
 	}
-	cmd := exec.Command("git", cmdArgs...)
-	output, err := cmd.CombinedOutput()
+
+	output, err := executeCommand("git", cmdArgs...)
 	if err != nil {
-		fmt.Printf("Error during 'GetModifiedFilesFromGitDiff' - Path %s - :%s\n", cmd.Dir, err)
+		fmt.Printf("Error during 'GetModifiedFilesFromGitDiff': %s\n", err)
 		return modfiles, err
 	}
 
@@ -106,6 +115,7 @@ func GetModifiedFilesFromGitDiff(fromStaged bool) ([]string, error) {
 			modfiles = append(modfiles, file)
 		}
 	}
+
 	return modfiles, nil
 }
 
@@ -122,7 +132,13 @@ func SendToGHActionsOutput(variable string, output string) {
 	}
 }
 
+var execCommandFunc = executeCommandDefault
+
 func executeCommand(command string, args ...string) ([]byte, error) {
+	return execCommandFunc(command, args)
+}
+
+func executeCommandDefault(command string, args []string) ([]byte, error) {
 	cmd := exec.Command(command, args...)
 
 	var stderr bytes.Buffer
@@ -136,6 +152,7 @@ func executeCommand(command string, args ...string) ([]byte, error) {
 		fmt.Printf("Stderr: %s\n", stderr.String())
 		fmt.Printf("Error: %s\n", err)
 		fmt.Printf("-----------------------------\n")
+
 		return nil, err
 	}
 
@@ -144,7 +161,7 @@ func executeCommand(command string, args ...string) ([]byte, error) {
 
 func writeToGHActionsVar(name string, value string) {
 	if name != "" {
-		f, err := os.OpenFile(name, os.O_APPEND|os.O_WRONLY, 0644)
+		f, err := os.OpenFile(name, os.O_APPEND|os.O_WRONLY, 0644) //nolint:gosec // name comes from GitHub Actions env vars
 		if err != nil {
 			log.Fatalf("failed opening file: %s", err)
 		}

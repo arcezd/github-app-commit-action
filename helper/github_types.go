@@ -1,6 +1,28 @@
 package github_helper
 
-import "time"
+import (
+	"errors"
+	"fmt"
+	"net/http"
+	"time"
+)
+
+// GitHubAPIError represents a non-2xx response from the GitHub API.
+type GitHubAPIError struct {
+	StatusCode int
+	Body       string
+}
+
+func (e *GitHubAPIError) Error() string {
+	return fmt.Sprintf("error calling github api, status code: %d, response: %s", e.StatusCode, e.Body)
+}
+
+// IsNotFound returns true if the error is a GitHub API 404 response.
+func IsNotFound(err error) bool {
+	var apiErr *GitHubAPIError
+
+	return errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound
+}
 
 type GitHubRepo struct {
 	Owner string `json:"owner"`
