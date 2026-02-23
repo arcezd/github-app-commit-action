@@ -1,15 +1,15 @@
-# Container image that runs your code
-FROM golang:1.22-alpine3.18 AS builder
+# container image for building binary
+FROM golang:1.26.0-alpine3.23 AS builder
 
 WORKDIR /out
 COPY . .
 
 RUN go build -o action .
 
-# Container image that runs your code
-FROM alpine:3.18
+# container image that runs your code
+FROM alpine:3.23
 
-# Install required packages
+# install required packages
 RUN apk add --no-cache git
 
 COPY entrypoint.sh /bin/entrypoint.sh
@@ -17,5 +17,5 @@ COPY --from=builder /out/action /bin/action
 
 RUN chmod +x /bin/entrypoint.sh /bin/action
 
-# Code file to execute when the docker container starts up (`entrypoint.sh`)
+# code file to execute when the docker container starts up (`entrypoint.sh`)
 ENTRYPOINT ["/bin/entrypoint.sh"]
