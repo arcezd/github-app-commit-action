@@ -1,5 +1,5 @@
 package main
 
 var (
-	BuildVersion = "v1.1.6"
+	BuildVersion = "v1.2.0"
 )
