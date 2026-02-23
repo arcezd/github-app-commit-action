@@ -13,10 +13,6 @@ import (
 	gh "github.com/arcezd/github-app-commit-action/helper"
 )
 
-var (
-	BuildVersion = "v1.1.6"
-)
-
 const (
 	// github pem env var
 	githubAppPrivateKeyEnvVar = "GH_APP_PRIVATE_KEY"

@@ -4,5 +4,5 @@ tag_format = "v$version"
 version_scheme = "semver"
 version = "1.1.6"
 version_files = [
-  "main.go:BuildVersion",
+  "version.go:BuildVersion",
 ]
