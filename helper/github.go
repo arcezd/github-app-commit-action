@@ -279,7 +279,7 @@ func CallGithubAPI(token string, method string, path string, data interface{}) (
 
 	// check http status code
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return "", fmt.Errorf("error calling github api, status code: %d, response: %s", resp.StatusCode, string(b))
+		return "", &GitHubAPIError{StatusCode: resp.StatusCode, Body: string(b)}
 	}
 
 	return string(b), nil

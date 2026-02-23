@@ -246,7 +246,11 @@ func CommitAndPush(repo GitHubRepo, commit GitCommit) (string, error) {
 	// try to update the branch first (most common case)
 	refResp, err := UpdateReference(refReq, fmt.Sprintf("heads/%s", commit.Branch), false)
 	if err != nil {
-		// if update failed, try creating the branch
+		if !IsNotFound(err) {
+			return "", fmt.Errorf("error updating reference: %w", err)
+		}
+
+		// branch doesn't exist (404), try creating it
 		fmt.Printf("Target branch '%s' doesn't exist. Creating it.\n", commit.Branch)
 		refResp, err = UpdateReference(refReq, fmt.Sprintf("heads/%s", commit.Branch), true)
 	} else {
@@ -296,7 +300,7 @@ func CreateTagAndPush(tag GitTag) error {
 		message := fmt.Sprintf("Tag '%s' updated with Sha %s\n", tag.TagName, tagResp.Sha)
 		fmt.Print(message)
 		AppendToGHActionsSummary(message)
-	} else {
+	} else if IsNotFound(err) {
 		// create tag reference
 		_, err = CreateReference(GithubRefRequest{
 			Ref:   fmt.Sprintf("refs/tags/%s", tag.TagName),
@@ -310,6 +314,8 @@ func CreateTagAndPush(tag GitTag) error {
 		message := fmt.Sprintf("Tag '%s' with Sha %s created\n", tag.TagName, tagResp.Sha)
 		fmt.Print(message)
 		AppendToGHActionsSummary(message)
+	} else {
+		return fmt.Errorf("error checking tag reference '%s': %w", tag.TagName, err)
 	}
 
 	return nil
