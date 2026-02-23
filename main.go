@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/pem"
 	"flag"
 	"fmt"
@@ -83,13 +84,24 @@ func main() {
 	privateKeyPemString := os.Getenv(githubAppPrivateKeyEnvVar)
 
 	if privateKeyPemString != "" {
+		privateKeyPemBytes := []byte(privateKeyPemString)
+
+		// try base64 decoding in case the key was passed encoded
+		decoded, err := base64.StdEncoding.DecodeString(privateKeyPemString)
+		if err == nil {
+			// check if the decoded content is valid PEM
+			if block, _ := pem.Decode(decoded); block != nil {
+				privateKeyPemBytes = decoded
+			}
+		}
+
 		// validate that the format for the private key is correct
-		block, _ := pem.Decode([]byte(privateKeyPemString))
+		block, _ := pem.Decode(privateKeyPemBytes)
 		if block == nil || block.Type != "RSA PRIVATE KEY" {
 			log.Fatal("failed to decode PEM block containing private key")
 		}
 		// sign the JWT token with the private key from the env var
-		if err := gh.SignJWTAppToken(appId, []byte(privateKeyPemString)); err != nil {
+		if err := gh.SignJWTAppToken(appId, privateKeyPemBytes); err != nil {
 			log.Fatalf("Failed to sign JWT token: %v", err)
 		}
 	} else if privateKeyPemFilename != "" {
