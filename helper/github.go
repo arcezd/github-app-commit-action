@@ -18,25 +18,32 @@ var (
 	initJwt, initToken sync.Once
 	ghAppSignedToken   string
 	ghAppToken         *GitHubAppToken = nil
+	initJwtErr         error
 )
 
-func initAppToken(appId string, privatePem []byte) {
+func initAppToken(appId string, privatePem []byte) error {
 	initJwt.Do(func() {
 		token, err := GenerateToken(appId, privatePem)
 		if err != nil {
-			panic(err)
+			initJwtErr = err
+			return
 		}
 		ghAppSignedToken = token
 	})
+
+	return initJwtErr
 }
 
-func SetGithubAppToken(token *GitHubAppToken) {
+func SetGithubAppToken(token *GitHubAppToken) error {
+	if token == nil {
+		return fmt.Errorf("GitHub App Token not provided")
+	}
+
 	initToken.Do(func() {
-		if token == nil {
-			panic("GitHub App Token not provided")
-		}
 		ghAppToken = token
 	})
+
+	return nil
 }
 
 // generate jwt token
@@ -81,7 +88,7 @@ func GenerateInstallationAccessToken(token string, installationId int) (string, 
 
 func GetReference(ref string) (GithubRefResponse, error) {
 	if ghAppToken == nil {
-		panic("GitHub App Token not initialized")
+		return GithubRefResponse{}, fmt.Errorf("GitHub App Token not initialized")
 	}
 	var respObj GithubRefResponse
 	response, err := CallGithubAPI(ghAppToken.Token, "GET", fmt.Sprintf("/repos/%s/%s/git/%s", ghAppToken.Repo.Owner, ghAppToken.Repo.Repo, ref), nil)
@@ -99,7 +106,7 @@ func GetReference(ref string) (GithubRefResponse, error) {
 
 func CreateTree(tree GithubTreeRequest) (GithubTreeResponse, error) {
 	if ghAppToken == nil {
-		panic("GitHub App Token not initialized")
+		return GithubTreeResponse{}, fmt.Errorf("GitHub App Token not initialized")
 	}
 	githubTreeResponse := GithubTreeResponse{}
 	response, err := CallGithubAPI(ghAppToken.Token, "POST", fmt.Sprintf("/repos/%s/%s/git/trees", ghAppToken.Repo.Owner, ghAppToken.Repo.Repo), tree)
@@ -117,7 +124,7 @@ func CreateTree(tree GithubTreeRequest) (GithubTreeResponse, error) {
 
 func CreateCommit(commit GithubCommitRequest) (GithubCommitResponse, error) {
 	if ghAppToken == nil {
-		panic("GitHub App Token not initialized")
+		return GithubCommitResponse{}, fmt.Errorf("GitHub App Token not initialized")
 	}
 	var respObj GithubCommitResponse
 	response, err := CallGithubAPI(ghAppToken.Token, "POST", fmt.Sprintf("/repos/%s/%s/git/commits", ghAppToken.Repo.Owner, ghAppToken.Repo.Repo), commit)
@@ -135,7 +142,7 @@ func CreateCommit(commit GithubCommitRequest) (GithubCommitResponse, error) {
 
 func CreateReference(request GithubRefRequest) (GithubRefResponse, error) {
 	if ghAppToken == nil {
-		panic("GitHub App Token not initialized")
+		return GithubRefResponse{}, fmt.Errorf("GitHub App Token not initialized")
 	}
 	var respObj GithubRefResponse
 	response, err := CallGithubAPI(ghAppToken.Token, "POST", fmt.Sprintf("/repos/%s/%s/git/refs", ghAppToken.Repo.Owner, ghAppToken.Repo.Repo), request)
@@ -153,7 +160,7 @@ func CreateReference(request GithubRefRequest) (GithubRefResponse, error) {
 
 func UpdateReference(request GithubRefRequest, ref string, createBranch bool) (GithubRefResponse, error) {
 	if ghAppToken == nil {
-		panic("GitHub App Token not initialized")
+		return GithubRefResponse{}, fmt.Errorf("GitHub App Token not initialized")
 	}
 	if createBranch {
 		// Remove "heads/" prefix if present, then add "refs/heads/"
@@ -187,7 +194,7 @@ func UpdateReference(request GithubRefRequest, ref string, createBranch bool) (G
 
 func CreateBlob(blob GithubBlobRequest) (GithubBlobResponse, error) {
 	if ghAppToken == nil {
-		panic("GitHub App Token not initialized")
+		return GithubBlobResponse{}, fmt.Errorf("GitHub App Token not initialized")
 	}
 	var respObj GithubBlobResponse
 	response, err := CallGithubAPI(ghAppToken.Token, "POST", fmt.Sprintf("/repos/%s/%s/git/blobs", ghAppToken.Repo.Owner, ghAppToken.Repo.Repo), blob)
@@ -205,7 +212,7 @@ func CreateBlob(blob GithubBlobRequest) (GithubBlobResponse, error) {
 
 func CreateTag(tag GithubTagRequest) (GithubTagResponse, error) {
 	if ghAppToken == nil {
-		panic("GitHub App Token not initialized")
+		return GithubTagResponse{}, fmt.Errorf("GitHub App Token not initialized")
 	}
 	var respObj GithubTagResponse
 	response, err := CallGithubAPI(ghAppToken.Token, "POST", fmt.Sprintf("/repos/%s/%s/git/tags", ghAppToken.Repo.Owner, ghAppToken.Repo.Repo), tag)

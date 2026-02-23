@@ -59,7 +59,7 @@ func main() {
 		
 		if matches == nil {
 			// return error, because the input is not in the expected format
-			panic(fmt.Errorf("invalid repository format '%s', expected format is 'owner/repo'", repository))
+			log.Fatalf("invalid repository format '%s', expected format is 'owner/repo'", repository)
 		}
 		// if valid, assign owner and repo
 		repo.Owner = matches[1]
@@ -68,7 +68,7 @@ func main() {
 	} else {
 		// return error, because the repository is required
 		flag.PrintDefaults()
-		panic(fmt.Errorf("repository flag is required. Use -r flag to specify the repository in the format owner/repo"))
+		log.Fatal("repository flag is required. Use -r flag to specify the repository in the format owner/repo")
 	}
 
 	if headBranch == "" {
@@ -77,7 +77,7 @@ func main() {
 
 	// sign the JWT token with the private key
 	if appId == "" {
-		panic("GitHub app id is required. Use -i flag to specify the GitHub app id")
+		log.Fatal("GitHub app id is required. Use -i flag to specify the GitHub app id")
 	}
 	
 	privateKeyPemString := os.Getenv(githubAppPrivateKeyEnvVar)
@@ -89,13 +89,16 @@ func main() {
 			log.Fatal("failed to decode PEM block containing private key")
 		}
 		// sign the JWT token with the private key from the env var
-		gh.SignJWTAppToken(appId, []byte(privateKeyPemString))
+		if err := gh.SignJWTAppToken(appId, []byte(privateKeyPemString)); err != nil {
+			log.Fatalf("Failed to sign JWT token: %v", err)
+		}
 	} else if privateKeyPemFilename != "" {
 		// sign the JWT token with the private key from the filename
-		gh.SignJWTAppTokenWithFilename(appId, privateKeyPemFilename)
+		if err := gh.SignJWTAppTokenWithFilename(appId, privateKeyPemFilename); err != nil {
+			log.Fatalf("Failed to sign JWT token from file: %v", err)
+		}
 	} else {
-		errMsg := fmt.Sprintf("You need to provide a private key in the environment variable %s or a filename with the -p flag", githubAppPrivateKeyEnvVar)
-		panic(errMsg)
+		log.Fatalf("You need to provide a private key in the environment variable %s or a filename with the -p flag", githubAppPrivateKeyEnvVar)
 	}
 
 	// parse coauthors
@@ -128,14 +131,20 @@ func main() {
 		commitMsg = fmt.Sprintf("chore: autopublish %s", dt.Format(time.RFC3339))
 	}
 
-	token := gh.GenerateInstallationAppToken(repo)
-	gh.SetGithubAppToken(&token)
+	token, err := gh.GenerateInstallationAppToken(repo)
+	if err != nil {
+		log.Fatalf("Failed to generate installation token: %v", err)
+	}
+
+	if err := gh.SetGithubAppToken(&token); err != nil {
+		log.Fatalf("Failed to set GitHub App token: %v", err)
+	}
 	//onBehalfOf := gh.GitHubOrg{
 	//	Name:  "BitsCR",
 	//	Slug:  "bits-cr",
 	//	Email: "dev@bits.cr",
 	//}
-	commitSha := gh.CommitAndPush(
+	commitSha, err := gh.CommitAndPush(
 		repo,
 		gh.GitCommit{
 			Branch:     branch,
@@ -149,6 +158,9 @@ func main() {
 			},
 		},
 	)
+	if err != nil {
+		log.Fatalf("Failed to commit and push: %v", err)
+	}
 
 	if tags != "" {
 		// split tags by comma
@@ -157,11 +169,14 @@ func main() {
 		for _, tag := range tagsList {
 			// remove leading and trailing spaces
 			tag = strings.TrimSpace(tag)
-			gh.CreateTagAndPush(gh.GitTag{
+
+			if err := gh.CreateTagAndPush(gh.GitTag{
 				TagName:   tag,
 				Message:   commitMsg,
 				CommitSha: commitSha,
-			})
+			}); err != nil {
+				log.Fatalf("Failed to create tag '%s': %v", tag, err)
+			}
 		}
 	}
 }
