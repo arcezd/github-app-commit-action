@@ -42,6 +42,7 @@ func main() {
 		flag.PrintDefaults()
 		return
 	}
+
 	if version {
 		fmt.Println(BuildVersion)
 		return
@@ -49,11 +50,13 @@ func main() {
 
 	// parse repository to get owner and repo
 	repo := gh.GitHubRepo{}
+
 	if repository != "" {
 		// validate repository format with regex and extract owner and repo
 		validRepoPattern := `^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)$`
 		re := regexp.MustCompile(validRepoPattern)
 		matches := re.FindStringSubmatch(repository)
+		
 		if matches == nil {
 			// return error, because the input is not in the expected format
 			panic(fmt.Errorf("invalid repository format '%s', expected format is 'owner/repo'", repository))
@@ -76,7 +79,9 @@ func main() {
 	if appId == "" {
 		panic("GitHub app id is required. Use -i flag to specify the GitHub app id")
 	}
+	
 	privateKeyPemString := os.Getenv(githubAppPrivateKeyEnvVar)
+
 	if privateKeyPemString != "" {
 		// validate that the format for the private key is correct
 		block, _ := pem.Decode([]byte(privateKeyPemString))
@@ -95,12 +100,14 @@ func main() {
 
 	// parse coauthors
 	coauthorsParam := []gh.GitUser{}
+
 	if coauthors != "" {
 		// slice the coauthors string by comma
 		coauthorsSlice := strings.Split(coauthors, ",")
 		for _, coauthor := range coauthorsSlice {
 			validCoauthorPattern := `^(.+) <(.+)>$`
 			re := regexp.MustCompile(validCoauthorPattern)
+
 			matches := re.FindStringSubmatch(coauthor)
 			if matches == nil {
 				log.Fatalf("invalid coauthor format '%s', expected format is 'Name <email@example.com>'", coauthor)
