@@ -48,7 +48,7 @@ type GitTag struct {
 func UploadFileToGitHubBlob(filename string) (GithubBlobResponse, error) {
 	resp := GithubBlobResponse{}
 	// check if file exists
-	_, err := os.Stat(filename)
+	_, err := os.Stat(filename) //nolint:gosec // filename comes from git diff output, not user input
 	if err != nil {
 		if os.IsNotExist(err) {
 			// file does not exist
@@ -61,10 +61,11 @@ func UploadFileToGitHubBlob(filename string) (GithubBlobResponse, error) {
 		}
 	} else {
 		// read file content
-		content, err := os.ReadFile(filename)
+		content, err := os.ReadFile(filename) //nolint:gosec // filename comes from git diff output
 		if err != nil {
 			return resp, err
 		}
+
 		base64Content := base64.StdEncoding.EncodeToString(content)
 		req := GithubBlobRequest{
 			Content:  base64Content,
@@ -75,6 +76,7 @@ func UploadFileToGitHubBlob(filename string) (GithubBlobResponse, error) {
 		if err != nil {
 			return resp, err
 		}
+
 		return resp, nil
 	}
 }
@@ -82,6 +84,7 @@ func UploadFileToGitHubBlob(filename string) (GithubBlobResponse, error) {
 func UploadFilesToGitHubBlob(files []string) ([]GitFile, error) {
 	//ch := make(chan string, len(files))
 	gitFiles := []GitFile{}
+
 	for _, filename := range files {
 		//go func() {
 		//	res, _ := requester.Get(insrequester.RequestEntity{Endpoint: url})
@@ -108,6 +111,7 @@ func UploadFilesToGitHubBlob(files []string) ([]GitFile, error) {
 			})
 		}
 	}
+
 	return gitFiles, nil
 }
 
@@ -121,7 +125,7 @@ func SignJWTAppTokenWithFilename(appId string, pemFilename string) error {
 	}
 
 	// read the private key from a file
-	privatePem, err := os.ReadFile(pemFilename)
+	privatePem, err := os.ReadFile(pemFilename) //nolint:gosec // pemFilename is from CLI flag, trusted input
 	if err != nil {
 		return fmt.Errorf("error reading PEM file: %w", err)
 	}

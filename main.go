@@ -20,33 +20,37 @@ const (
 	defaultCommitMessage      = "chore: autopublish ${date}"
 )
 
-func main() {
+func run(args []string, getenv func(string) string) error {
 	var appId, branch, headBranch, repository, privateKeyPemFilename, commitMsg, coauthors, tags string
 	var version, help, force, addNewFiles bool
 
 	// parse flags
-	flag.BoolVar(&help, "help", false, "CLI help")
-	flag.BoolVar(&version, "version", false, "Version of the CLI")
-	flag.StringVar(&appId, "i", "", "GitHub app id")
-	flag.StringVar(&headBranch, "h", "", "GitHub head branch to commit from. Default is the same as branch")
-	flag.StringVar(&branch, "b", "main", "GitHub target branch to commit to")
-	flag.StringVar(&repository, "r", "", "GitHub repository in the format owner/repo")
-	flag.StringVar(&privateKeyPemFilename, "p", "", fmt.Sprintf("Path to the private key pem file. %s env variable has priority over this", githubAppPrivateKeyEnvVar))
-	flag.StringVar(&commitMsg, "m", defaultCommitMessage, "Commit message")
-	flag.StringVar(&coauthors, "c", "", "Coauthors in the format 'Name1 <email1>, Name2 <email2>'")
-	flag.StringVar(&tags, "t", "", "Tags separated by commass, 'tag1, tag2, tag3'")
-	flag.BoolVar(&addNewFiles, "a", true, "Add new files to the commit")
-	flag.BoolVar(&force, "f", false, "Force push to the branch")
-	flag.Parse()
+	fs := flag.NewFlagSet("github-app-commit-action", flag.ContinueOnError)
+	fs.BoolVar(&help, "help", false, "CLI help")
+	fs.BoolVar(&version, "version", false, "Version of the CLI")
+	fs.StringVar(&appId, "i", "", "GitHub app id")
+	fs.StringVar(&headBranch, "h", "", "GitHub head branch to commit from. Default is the same as branch")
+	fs.StringVar(&branch, "b", "main", "GitHub target branch to commit to")
+	fs.StringVar(&repository, "r", "", "GitHub repository in the format owner/repo")
+	fs.StringVar(&privateKeyPemFilename, "p", "", fmt.Sprintf("Path to the private key pem file. %s env variable has priority over this", githubAppPrivateKeyEnvVar))
+	fs.StringVar(&commitMsg, "m", defaultCommitMessage, "Commit message")
+	fs.StringVar(&coauthors, "c", "", "Coauthors in the format 'Name1 <email1>, Name2 <email2>'")
+	fs.StringVar(&tags, "t", "", "Tags separated by commass, 'tag1, tag2, tag3'")
+	fs.BoolVar(&addNewFiles, "a", true, "Add new files to the commit")
+	fs.BoolVar(&force, "f", false, "Force push to the branch")
+
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
 
 	if help {
-		flag.PrintDefaults()
-		return
+		fs.PrintDefaults()
+		return nil
 	}
 
 	if version {
 		fmt.Println(BuildVersion)
-		return
+		return nil
 	}
 
 	// parse repository to get owner and repo
@@ -57,19 +61,16 @@ func main() {
 		validRepoPattern := `^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)$`
 		re := regexp.MustCompile(validRepoPattern)
 		matches := re.FindStringSubmatch(repository)
-		
+
 		if matches == nil {
-			// return error, because the input is not in the expected format
-			log.Fatalf("invalid repository format '%s', expected format is 'owner/repo'", repository)
+			return fmt.Errorf("invalid repository format '%s', expected format is 'owner/repo'", repository)
 		}
 		// if valid, assign owner and repo
 		repo.Owner = matches[1]
 		repo.Repo = matches[2]
 		fmt.Printf("Owner: %s, Repo: %s\n", repo.Owner, repo.Repo)
 	} else {
-		// return error, because the repository is required
-		flag.PrintDefaults()
-		log.Fatal("repository flag is required. Use -r flag to specify the repository in the format owner/repo")
+		return fmt.Errorf("repository flag is required. Use -r flag to specify the repository in the format owner/repo")
 	}
 
 	if headBranch == "" {
@@ -78,10 +79,10 @@ func main() {
 
 	// sign the JWT token with the private key
 	if appId == "" {
-		log.Fatal("GitHub app id is required. Use -i flag to specify the GitHub app id")
+		return fmt.Errorf("GitHub app id is required. Use -i flag to specify the GitHub app id")
 	}
-	
-	privateKeyPemString := os.Getenv(githubAppPrivateKeyEnvVar)
+
+	privateKeyPemString := getenv(githubAppPrivateKeyEnvVar)
 
 	if privateKeyPemString != "" {
 		privateKeyPemBytes := []byte(privateKeyPemString)
@@ -98,19 +99,19 @@ func main() {
 		// validate that the format for the private key is correct
 		block, _ := pem.Decode(privateKeyPemBytes)
 		if block == nil || block.Type != "RSA PRIVATE KEY" {
-			log.Fatal("failed to decode PEM block containing private key")
+			return fmt.Errorf("failed to decode PEM block containing private key")
 		}
 		// sign the JWT token with the private key from the env var
 		if err := gh.SignJWTAppToken(appId, privateKeyPemBytes); err != nil {
-			log.Fatalf("Failed to sign JWT token: %v", err)
+			return fmt.Errorf("failed to sign JWT token: %w", err)
 		}
 	} else if privateKeyPemFilename != "" {
 		// sign the JWT token with the private key from the filename
 		if err := gh.SignJWTAppTokenWithFilename(appId, privateKeyPemFilename); err != nil {
-			log.Fatalf("Failed to sign JWT token from file: %v", err)
+			return fmt.Errorf("failed to sign JWT token from file: %w", err)
 		}
 	} else {
-		log.Fatalf("You need to provide a private key in the environment variable %s or a filename with the -p flag", githubAppPrivateKeyEnvVar)
+		return fmt.Errorf("you need to provide a private key in the environment variable %s or a filename with the -p flag", githubAppPrivateKeyEnvVar)
 	}
 
 	// parse coauthors
@@ -125,7 +126,7 @@ func main() {
 
 			matches := re.FindStringSubmatch(coauthor)
 			if matches == nil {
-				log.Fatalf("invalid coauthor format '%s', expected format is 'Name <email@example.com>'", coauthor)
+				return fmt.Errorf("invalid coauthor format '%s', expected format is 'Name <email@example.com>'", coauthor)
 			}
 			// if valid, assign name and email
 			name := matches[1]
@@ -145,17 +146,13 @@ func main() {
 
 	token, err := gh.GenerateInstallationAppToken(repo)
 	if err != nil {
-		log.Fatalf("Failed to generate installation token: %v", err)
+		return fmt.Errorf("failed to generate installation token: %w", err)
 	}
 
 	if err := gh.SetGithubAppToken(&token); err != nil {
-		log.Fatalf("Failed to set GitHub App token: %v", err)
+		return fmt.Errorf("failed to set GitHub App token: %w", err)
 	}
-	//onBehalfOf := gh.GitHubOrg{
-	//	Name:  "BitsCR",
-	//	Slug:  "bits-cr",
-	//	Email: "dev@bits.cr",
-	//}
+
 	commitSha, err := gh.CommitAndPush(
 		repo,
 		gh.GitCommit{
@@ -163,7 +160,6 @@ func main() {
 			HeadBranch: &headBranch,
 			Message:    commitMsg,
 			Coauthors:  &coauthorsParam,
-			//OnBehalfOf: &onBehalfOf,
 			Options: gh.CommitOptions{
 				AddNewFiles: addNewFiles,
 				Force:       force,
@@ -171,7 +167,7 @@ func main() {
 		},
 	)
 	if err != nil {
-		log.Fatalf("Failed to commit and push: %v", err)
+		return fmt.Errorf("failed to commit and push: %w", err)
 	}
 
 	if tags != "" {
@@ -187,8 +183,16 @@ func main() {
 				Message:   commitMsg,
 				CommitSha: commitSha,
 			}); err != nil {
-				log.Fatalf("Failed to create tag '%s': %v", tag, err)
+				return fmt.Errorf("failed to create tag '%s': %w", tag, err)
 			}
 		}
+	}
+
+	return nil
+}
+
+func main() {
+	if err := run(os.Args[1:], os.Getenv); err != nil {
+		log.Fatal(err)
 	}
 }
