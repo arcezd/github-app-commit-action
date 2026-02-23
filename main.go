@@ -24,18 +24,20 @@ const (
 )
 
 func main() {
-	var branch, headBranch, repository, privateKeyPemFilename, commitMsg, coauthors string
+	var appId, branch, headBranch, repository, privateKeyPemFilename, commitMsg, coauthors, tags string
 	var version, help, force, addNewFiles bool
 
 	// parse flags
 	flag.BoolVar(&help, "help", false, "CLI help")
 	flag.BoolVar(&version, "version", false, "Version of the CLI")
+	flag.StringVar(&appId, "i", "", "GitHub app id")
 	flag.StringVar(&headBranch, "h", "", "GitHub head branch to commit from. Default is the same as branch")
 	flag.StringVar(&branch, "b", "main", "GitHub target branch to commit to")
 	flag.StringVar(&repository, "r", "", "GitHub repository in the format owner/repo")
 	flag.StringVar(&privateKeyPemFilename, "p", "", fmt.Sprintf("Path to the private key pem file. %s env variable has priority over this", githubAppPrivateKeyEnvVar))
 	flag.StringVar(&commitMsg, "m", defaultCommitMessage, "Commit message")
 	flag.StringVar(&coauthors, "c", "", "Coauthors in the format 'Name1 <email1>, Name2 <email2>'")
+	flag.StringVar(&tags, "t", "", "Tags separated by commass, 'tag1, tag2, tag3'")
 	flag.BoolVar(&addNewFiles, "a", true, "Add new files to the commit")
 	flag.BoolVar(&force, "f", false, "Force push to the branch")
 	flag.Parse()
@@ -75,6 +77,9 @@ func main() {
 	}
 
 	// sign the JWT token with the private key
+	if appId == "" {
+		panic("GitHub app id is required. Use -i flag to specify the GitHub app id")
+	}
 	privateKeyPemString := os.Getenv(githubAppPrivateKeyEnvVar)
 	if privateKeyPemString != "" {
 		// validate that the format for the private key is correct
@@ -83,10 +88,10 @@ func main() {
 			log.Fatal("failed to decode PEM block containing private key")
 		}
 		// sign the JWT token with the private key from the env var
-		gh.SignJWTAppToken([]byte(privateKeyPemString))
+		gh.SignJWTAppToken(appId, []byte(privateKeyPemString))
 	} else if privateKeyPemFilename != "" {
 		// sign the JWT token with the private key from the filename
-		gh.SignJWTAppTokenWithFilename(privateKeyPemFilename)
+		gh.SignJWTAppTokenWithFilename(appId, privateKeyPemFilename)
 	} else {
 		errMsg := fmt.Sprintf("You need to provide a private key in the environment variable %s or a filename with the -p flag", githubAppPrivateKeyEnvVar)
 		panic(errMsg)
@@ -127,7 +132,7 @@ func main() {
 	//	Slug:  "bits-cr",
 	//	Email: "dev@bits.cr",
 	//}
-	gh.CommitAndPush(
+	commitSha := gh.CommitAndPush(
 		repo,
 		gh.GitCommit{
 			Branch:     branch,
@@ -141,4 +146,19 @@ func main() {
 			},
 		},
 	)
+
+	if tags != "" {
+		// split tags by comma
+		tagsList := strings.Split(tags, ",")
+		// create tags
+		for _, tag := range tagsList {
+			// remove leading and trailing spaces
+			tag = strings.TrimSpace(tag)
+			gh.CreateTagAndPush(gh.GitTag{
+				TagName:   tag,
+				Message:   commitMsg,
+				CommitSha: commitSha,
+			})
+		}
+	}
 }

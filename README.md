@@ -4,6 +4,7 @@ This GH action allow you to sign your commits with a Github App
 ## Inputs
 | Variable | Description | Type |
 | -------- | ----------- | ---- |
+| `github-app-id` | **Required**. The Github App ID. | `string` |
 | `github-app-private-key-file` | The Github App private key filename. | `string` |
 | `repository` | **Required**. GitHub repository in the format owner/repo | `string` |
 | `branch` | Target branch to commit to (default "main")| `string` |
@@ -22,7 +23,6 @@ with:
 ```
 
 ## TODO
-- [ ] Add support for `GITHUB_APP_INSTALLATION_TOKEN` as input
 - [ ] Support executable permissions for uploaded files
 - [ ] Fix on-behalf-of commits
 - [ ] Add support to specify the list of files to commit

@@ -2,6 +2,9 @@
 name: 'GitHub app commit and push'
 description: 'Create a commit and push to a GitHub repository'
 inputs:
+  github-app-id:
+    description: 'The ID of the GitHub App'
+    required: true
   github-app-private-key:
     description: 'The private key pem content of the GitHub App'
     required: false
@@ -25,6 +28,10 @@ inputs:
     description: 'Force push to the branch'
     required: false
     default: 'false'
+  tags:
+    description: 'Tags to create for the commit created'
+    required: false
+    default: ''
   add-new-files:
     description: 'Add new files to the commit'
     required: false
@@ -34,12 +41,13 @@ inputs:
     required: false
     default: ''
 outputs:
-  sha: # id of output
+  sha:
     description: 'Commit SHA'
 runs:
   using: 'docker'
   image: 'Dockerfile'
   env:
+    GH_APP_ID: ${{ inputs.github-app-id }}
     GH_APP_PRIVATE_KEY: ${{ inputs.github-app-private-key }}
     GH_APP_PRIVATE_KEY_FILE: ${{ inputs.github-app-private-key-file }}
     REPOSITORY: ${{ inputs.repository }}
@@ -47,5 +55,6 @@ runs:
     HEAD_BRANCH: ${{ inputs.head }}
     COMMIT_MSG: ${{ inputs.message }}
     FORCE_PUSH: ${{ inputs.force-push }}
+    TAGS: ${{ inputs.tags }}
     ADD_NEW_FILES: ${{ inputs.add-new-files }}
     COAUTHORS: ${{ inputs.coauthors }}

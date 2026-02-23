@@ -39,6 +39,12 @@ type GitFile struct {
 	Sha        *string
 }
 
+type GitTag struct {
+	TagName   string
+	Message   string
+	CommitSha string
+}
+
 func UploadFileToGitHubBlob(filename string) (GithubBlobResponse, error) {
 	resp := GithubBlobResponse{}
 	// check if file exists
@@ -105,11 +111,11 @@ func UploadFilesToGitHubBlob(files []string) ([]GitFile, error) {
 	return gitFiles, nil
 }
 
-func SignJWTAppToken(privatePem []byte) {
-	initAppToken(privatePem)
+func SignJWTAppToken(appId string, privatePem []byte) {
+	initAppToken(appId, privatePem)
 }
 
-func SignJWTAppTokenWithFilename(pemFilename string) {
+func SignJWTAppTokenWithFilename(appId string, pemFilename string) {
 	if pemFilename == "" {
 		panic("PEM file not provided")
 	}
@@ -119,7 +125,7 @@ func SignJWTAppTokenWithFilename(pemFilename string) {
 	if err != nil {
 		panic(err)
 	}
-	SignJWTAppToken(privatePem)
+	SignJWTAppToken(appId, privatePem)
 }
 
 func GenerateInstallationAppToken(repo GitHubRepo) GitHubAppToken {
@@ -140,12 +146,12 @@ func GenerateInstallationAppToken(repo GitHubRepo) GitHubAppToken {
 	}
 }
 
-func CommitAndPush(repo GitHubRepo, commit GitCommit) {
+func CommitAndPush(repo GitHubRepo, commit GitCommit) string {
 	// get head reference
 	if commit.HeadBranch == nil {
 		commit.HeadBranch = &commit.Branch
 	}
-	githubRefResponse, err := GetReference(*commit.HeadBranch)
+	githubRefResponse, err := GetReference(fmt.Sprintf("refs/heads/%s", *commit.HeadBranch))
 	if err != nil {
 		panic(err)
 	}
@@ -226,7 +232,16 @@ func CommitAndPush(repo GitHubRepo, commit GitCommit) {
 	if commit.Options.Force {
 		refReq.Force = true
 	}
-	refResp, err := UpdateReference(refReq, commit.Branch, false)
+	
+	// try to update the branch first (most common case)
+	refResp, err := UpdateReference(refReq, fmt.Sprintf("heads/%s", commit.Branch), false)
+	if err != nil {
+		// if update failed, try creating the branch
+		fmt.Printf("Target branch '%s' doesn't exist. Creating it.\n", commit.Branch)
+		refResp, err = UpdateReference(refReq, fmt.Sprintf("heads/%s", commit.Branch), true)
+	} else {
+		fmt.Printf("Target branch '%s' updated.\n", commit.Branch)
+	}
 	if err != nil {
 		panic(err)
 	}
@@ -236,4 +251,43 @@ func CommitAndPush(repo GitHubRepo, commit GitCommit) {
 	AppendToGHActionsSummary(message)
 
 	SendToGHActionsOutput("sha", refResp.Object.Sha)
+	return refResp.Object.Sha
+}
+
+func CreateTagAndPush(tag GitTag) {
+	// create tag
+	tagResp, err := CreateTag(GithubTagRequest{
+		Tag:     tag.TagName,
+		Message: tag.Message,
+		Object:  tag.CommitSha,
+		Type:    "commit",
+		Tagger:  nil,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// check if tag already exists
+	_, err = GetReference(fmt.Sprintf("refs/tags/%s", tag.TagName))
+	if err == nil {
+		// tag already exists
+		fmt.Printf("Tag '%s' already exists. Updating\n", tag.TagName)
+		UpdateReference(GithubRefRequest{
+			Sha:   tagResp.Sha,
+			Force: true,
+		}, fmt.Sprintf("tags/%s", tag.TagName), false)
+		message := fmt.Sprintf("Tag '%s' updated with Sha %s\n", tag.TagName, tagResp.Sha)
+		fmt.Print(message)
+		AppendToGHActionsSummary(message)
+	} else {
+		// create tag reference
+		CreateReference(GithubRefRequest{
+			Ref:   fmt.Sprintf("refs/tags/%s", tag.TagName),
+			Sha:   tagResp.Sha,
+			Force: true,
+		})
+		message := fmt.Sprintf("Tag '%s' with Sha %s created\n", tag.TagName, tagResp.Sha)
+		fmt.Print(message)
+		AppendToGHActionsSummary(message)
+	}
 }

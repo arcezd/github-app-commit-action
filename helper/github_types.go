@@ -137,6 +137,31 @@ type GithubBlobRequest struct {
 	Encoding string `json:"encoding"` // The encoding used for content. Currently, "utf-8" and "base64" are supported.
 }
 
+type GithubTagger struct {
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	Date  string `json:"date,omitempty"`
+}
+
+type GithubTagResponse struct {
+	NodeID       string             `json:"node_id"`
+	Tag          string             `json:"tag"`
+	Sha          string             `json:"sha"`
+	Url          string             `json:"url"`
+	Message      string             `json:"message"`
+	Tagger       GithubTagger       `json:"tagger,omitempty"`
+	Object       RefObject          `json:"object"`
+	Verification CommitVerification `json:"verification"`
+}
+
+type GithubTagRequest struct {
+	Tag     string        `json:"tag"`
+	Message string        `json:"message"`
+	Object  string        `json:"object"`
+	Type    string        `json:"type"`
+	Tagger  *GithubTagger `json:"tagger,omitempty"`
+}
+
 type GithubAppInstallationResponse struct {
 	Id                     int           `json:"id"`
 	Account                GithubAccount `json:"account"`
