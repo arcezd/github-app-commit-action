@@ -97,7 +97,10 @@ func GetReference(ref string) (GithubRefResponse, error) {
 
 	var respObj GithubRefResponse
 
-	response, err := CallGithubAPI(ghAppToken.Token, "GET", fmt.Sprintf("/repos/%s/%s/git/%s", ghAppToken.Repo.Owner, ghAppToken.Repo.Repo, ref), nil)
+	// use the singular /git/ref/ endpoint: it matches the ref exactly or answers 404, while
+	// /git/refs/ returns an array of every ref that starts with the name when the ref itself
+	// is missing (e.g. "tags/v1" once "tags/v1.0.0" exists)
+	response, err := CallGithubAPI(ghAppToken.Token, "GET", fmt.Sprintf("/repos/%s/%s/git/ref/%s", ghAppToken.Repo.Owner, ghAppToken.Repo.Repo, strings.TrimPrefix(ref, "refs/")), nil)
 	if err != nil {
 		return respObj, err
 	}

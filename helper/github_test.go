@@ -201,7 +201,12 @@ func TestGenerateInstallationAccessToken_InvalidJSON(t *testing.T) {
 
 func TestGetReference_Success(t *testing.T) {
 	resetGlobals()
-	setupTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+
+	var gotPath string
+
+	setupTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+
 		jsonResponse(w, http.StatusOK, GithubRefResponse{
 			Ref:    "refs/heads/main",
 			Object: RefObject{Sha: "abc123", Type: "commit"},
@@ -219,6 +224,11 @@ func TestGetReference_Success(t *testing.T) {
 
 	if ref.Object.Sha != "abc123" {
 		t.Errorf("expected sha abc123, got %s", ref.Object.Sha)
+	}
+
+	// the exact-match endpoint, never the prefix-matching /git/refs/
+	if gotPath != "/repos/owner/repo/git/ref/heads/main" {
+		t.Errorf("unexpected path: %s", gotPath)
 	}
 }
 
