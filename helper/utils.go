@@ -147,7 +147,7 @@ func executeCommandDefault(command string, args []string) ([]byte, error) {
 	output, err := cmd.Output()
 	if err != nil {
 		fmt.Printf("-----------------------------\n")
-		fmt.Printf("Error during 'StageModifiedAndNewFiles'\n")
+		fmt.Printf("Error during '%s %s'\n", command, strings.Join(args, " "))
 		fmt.Printf("Path: %s\n", cmd.Dir)
 		fmt.Printf("Stderr: %s\n", stderr.String())
 		fmt.Printf("Error: %s\n", err)

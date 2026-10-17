@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -22,6 +23,22 @@ func IsNotFound(err error) bool {
 	var apiErr *GitHubAPIError
 
 	return errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound
+}
+
+// IsReferenceNotFound returns true if the error indicates that a git reference
+// does not exist. GitHub answers 404 for a missing ref on GET, but 422
+// "Reference does not exist" when PATCHing (updating) a missing ref.
+func IsReferenceNotFound(err error) bool {
+	var apiErr *GitHubAPIError
+	if !errors.As(err, &apiErr) {
+		return false
+	}
+
+	if apiErr.StatusCode == http.StatusNotFound {
+		return true
+	}
+
+	return apiErr.StatusCode == http.StatusUnprocessableEntity && strings.Contains(apiErr.Body, "Reference does not exist")
 }
 
 type GitHubRepo struct {

@@ -479,9 +479,9 @@ func TestCommitAndPush_BranchNotFound_CreatesBranch(t *testing.T) {
 			jsonResponse(w, http.StatusCreated, GithubCommitResponse{Sha: "commit-sha"})
 		},
 		"PATCH /repos/owner/repo/git/refs/heads/new-branch": func(w http.ResponseWriter, _ *http.Request) {
-			// 404 - branch doesn't exist
-			w.WriteHeader(http.StatusNotFound)
-			_, _ = w.Write([]byte(`{"message":"Not Found"}`))
+			// GitHub answers 422 "Reference does not exist" when updating a missing branch
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			_, _ = w.Write([]byte(`{"message":"Reference does not exist"}`))
 		},
 		"POST /repos/owner/repo/git/refs": func(w http.ResponseWriter, _ *http.Request) {
 			jsonResponse(w, http.StatusCreated, GithubRefResponse{

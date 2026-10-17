@@ -70,6 +70,8 @@ func run(args []string, getenv func(string) string) error {
 		repo.Repo = matches[2]
 		fmt.Printf("Owner: %s, Repo: %s\n", repo.Owner, repo.Repo)
 	} else {
+		fs.PrintDefaults()
+
 		return fmt.Errorf("repository flag is required. Use -r flag to specify the repository in the format owner/repo")
 	}
 
@@ -98,7 +100,8 @@ func run(args []string, getenv func(string) string) error {
 
 		// validate that the format for the private key is correct
 		block, _ := pem.Decode(privateKeyPemBytes)
-		if block == nil || block.Type != "RSA PRIVATE KEY" {
+		// accept PKCS#1 ("RSA PRIVATE KEY") and PKCS#8 ("PRIVATE KEY"); jwt.ParseRSAPrivateKeyFromPEM handles both
+		if block == nil || (block.Type != "RSA PRIVATE KEY" && block.Type != "PRIVATE KEY") {
 			return fmt.Errorf("failed to decode PEM block containing private key")
 		}
 		// sign the JWT token with the private key from the env var

@@ -250,11 +250,11 @@ func CommitAndPush(repo GitHubRepo, commit GitCommit) (string, error) {
 	// try to update the branch first (most common case)
 	refResp, err := UpdateReference(refReq, fmt.Sprintf("heads/%s", commit.Branch), false)
 	if err != nil {
-		if !IsNotFound(err) {
+		if !IsReferenceNotFound(err) {
 			return "", fmt.Errorf("error updating reference: %w", err)
 		}
 
-		// branch doesn't exist (404), try creating it
+		// branch doesn't exist (404, or 422 "Reference does not exist"), try creating it
 		fmt.Printf("Target branch '%s' doesn't exist. Creating it.\n", commit.Branch)
 		refResp, err = UpdateReference(refReq, fmt.Sprintf("heads/%s", commit.Branch), true)
 	} else {

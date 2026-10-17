@@ -49,3 +49,26 @@ func TestIsNotFound_Nil(t *testing.T) {
 		t.Error("expected IsNotFound to return false for nil")
 	}
 }
+
+func TestIsReferenceNotFound(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"404", &GitHubAPIError{StatusCode: 404, Body: `{"message":"Not Found"}`}, true},
+		{"422 missing ref", &GitHubAPIError{StatusCode: 422, Body: `{"message":"Reference does not exist"}`}, true},
+		{"422 not fast forward", &GitHubAPIError{StatusCode: 422, Body: `{"message":"Update is not a fast forward"}`}, false},
+		{"403", &GitHubAPIError{StatusCode: 403, Body: `{"message":"Forbidden"}`}, false},
+		{"non-API error", fmt.Errorf("boom"), false},
+		{"nil", nil, false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := IsReferenceNotFound(tc.err); got != tc.want {
+				t.Errorf("IsReferenceNotFound() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
