@@ -327,7 +327,7 @@ func TestCommitAndPush_HappyPath(t *testing.T) {
 	t.Setenv("GITHUB_OUTPUT", outputFile.Name())
 
 	setupTestServer(t, apiRouter(map[string]http.HandlerFunc{
-		"GET /repos/owner/repo/git/refs/heads/main": func(w http.ResponseWriter, _ *http.Request) {
+		"GET /repos/owner/repo/git/ref/heads/main": func(w http.ResponseWriter, _ *http.Request) {
 			jsonResponse(w, http.StatusOK, GithubRefResponse{
 				Ref:    "refs/heads/main",
 				Object: RefObject{Sha: "base-sha"},
@@ -396,7 +396,7 @@ func TestCommitAndPush_WithCoauthors(t *testing.T) {
 	var capturedCommitMsg string
 
 	setupTestServer(t, apiRouter(map[string]http.HandlerFunc{
-		"GET /repos/owner/repo/git/refs/heads/main": func(w http.ResponseWriter, _ *http.Request) {
+		"GET /repos/owner/repo/git/ref/heads/main": func(w http.ResponseWriter, _ *http.Request) {
 			jsonResponse(w, http.StatusOK, GithubRefResponse{Object: RefObject{Sha: "base-sha"}})
 		},
 		"POST /repos/owner/repo/git/blobs": func(w http.ResponseWriter, _ *http.Request) {
@@ -466,7 +466,7 @@ func TestCommitAndPush_BranchNotFound_CreatesBranch(t *testing.T) {
 	headBranch := "main"
 
 	setupTestServer(t, apiRouter(map[string]http.HandlerFunc{
-		"GET /repos/owner/repo/git/refs/heads/main": func(w http.ResponseWriter, _ *http.Request) {
+		"GET /repos/owner/repo/git/ref/heads/main": func(w http.ResponseWriter, _ *http.Request) {
 			jsonResponse(w, http.StatusOK, GithubRefResponse{Object: RefObject{Sha: "base-sha"}})
 		},
 		"POST /repos/owner/repo/git/blobs": func(w http.ResponseWriter, _ *http.Request) {
@@ -562,7 +562,7 @@ func TestCommitAndPush_ForceFlag(t *testing.T) {
 	var capturedForce bool
 
 	setupTestServer(t, apiRouter(map[string]http.HandlerFunc{
-		"GET /repos/owner/repo/git/refs/heads/main": func(w http.ResponseWriter, _ *http.Request) {
+		"GET /repos/owner/repo/git/ref/heads/main": func(w http.ResponseWriter, _ *http.Request) {
 			jsonResponse(w, http.StatusOK, GithubRefResponse{Object: RefObject{Sha: "base-sha"}})
 		},
 		"POST /repos/owner/repo/git/blobs": func(w http.ResponseWriter, _ *http.Request) {
@@ -611,7 +611,7 @@ func TestCommitAndPush_HeadBranchDefaultsToBranch(t *testing.T) {
 	var capturedRefPath string
 
 	setupTestServer(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" && strings.Contains(r.URL.Path, "/git/refs/heads/") {
+		if r.Method == "GET" && strings.Contains(r.URL.Path, "/git/ref/heads/") {
 			capturedRefPath = r.URL.Path
 
 			jsonResponse(w, http.StatusOK, GithubRefResponse{Object: RefObject{Sha: "base-sha"}})
@@ -654,7 +654,7 @@ func TestCreateTagAndPush_NewTag(t *testing.T) {
 		"POST /repos/owner/repo/git/tags": func(w http.ResponseWriter, _ *http.Request) {
 			jsonResponse(w, http.StatusCreated, GithubTagResponse{Sha: "tag-sha", Tag: "v1.0.0"})
 		},
-		"GET /repos/owner/repo/git/refs/tags/v1.0.0": func(w http.ResponseWriter, _ *http.Request) {
+		"GET /repos/owner/repo/git/ref/tags/v1.0.0": func(w http.ResponseWriter, _ *http.Request) {
 			// 404 - tag doesn't exist
 			w.WriteHeader(http.StatusNotFound)
 			_, _ = w.Write([]byte(`{"message":"Not Found"}`))
@@ -685,7 +685,7 @@ func TestCreateTagAndPush_ExistingTag(t *testing.T) {
 		"POST /repos/owner/repo/git/tags": func(w http.ResponseWriter, _ *http.Request) {
 			jsonResponse(w, http.StatusCreated, GithubTagResponse{Sha: "tag-sha", Tag: "v1.0.0"})
 		},
-		"GET /repos/owner/repo/git/refs/tags/v1.0.0": func(w http.ResponseWriter, _ *http.Request) {
+		"GET /repos/owner/repo/git/ref/tags/v1.0.0": func(w http.ResponseWriter, _ *http.Request) {
 			// Tag exists
 			jsonResponse(w, http.StatusOK, GithubRefResponse{
 				Ref:    "refs/tags/v1.0.0",
@@ -707,6 +707,52 @@ func TestCreateTagAndPush_ExistingTag(t *testing.T) {
 	err := CreateTagAndPush(GitTag{TagName: "v1.0.0", Message: "release", CommitSha: "commit-sha"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// A major tag (v1) created after its exact tag (v1.0.0): /git/refs/tags/v1 would return
+// an array with refs/tags/v1.0.0, so the lookup must use the exact-match /git/ref/ endpoint.
+func TestCreateTagAndPush_NewTagWithPrefixMatches(t *testing.T) {
+	resetGlobals()
+	t.Setenv("GITHUB_ACTIONS", "false")
+
+	created := false
+
+	setupTestServer(t, apiRouter(map[string]http.HandlerFunc{
+		"POST /repos/owner/repo/git/tags": func(w http.ResponseWriter, _ *http.Request) {
+			jsonResponse(w, http.StatusCreated, GithubTagResponse{Sha: "tag-sha", Tag: "v1"})
+		},
+		"GET /repos/owner/repo/git/refs/tags/v1": func(w http.ResponseWriter, _ *http.Request) {
+			jsonResponse(w, http.StatusOK, []GithubRefResponse{{
+				Ref:    "refs/tags/v1.0.0",
+				Object: RefObject{Sha: "other-sha"},
+			}})
+		},
+		"GET /repos/owner/repo/git/ref/tags/v1": func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"message":"Not Found"}`))
+		},
+		"POST /repos/owner/repo/git/refs": func(w http.ResponseWriter, _ *http.Request) {
+			created = true
+
+			jsonResponse(w, http.StatusCreated, GithubRefResponse{
+				Ref:    "refs/tags/v1",
+				Object: RefObject{Sha: "tag-sha"},
+			})
+		},
+	}))
+	setTestAppToken(t, &GitHubAppToken{
+		Token: "test-token",
+		Repo:  GitHubRepo{Owner: "owner", Repo: "repo"},
+	})
+
+	err := CreateTagAndPush(GitTag{TagName: "v1", Message: "release", CommitSha: "commit-sha"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !created {
+		t.Error("expected the v1 tag reference to be created")
 	}
 }
 
@@ -735,7 +781,7 @@ func TestCreateTagAndPush_Non404GetReferenceError(t *testing.T) {
 		"POST /repos/owner/repo/git/tags": func(w http.ResponseWriter, _ *http.Request) {
 			jsonResponse(w, http.StatusCreated, GithubTagResponse{Sha: "tag-sha", Tag: "v1.0.0"})
 		},
-		"GET /repos/owner/repo/git/refs/tags/v1.0.0": func(w http.ResponseWriter, _ *http.Request) {
+		"GET /repos/owner/repo/git/ref/tags/v1.0.0": func(w http.ResponseWriter, _ *http.Request) {
 			// Non-404 error
 			w.WriteHeader(http.StatusForbidden)
 			_, _ = w.Write([]byte(`{"message":"Forbidden"}`))
@@ -783,7 +829,7 @@ func TestCommitAndPush_AddNewFilesFalse(t *testing.T) {
 	t.Setenv("GITHUB_ACTIONS", "false")
 
 	setupTestServer(t, apiRouter(map[string]http.HandlerFunc{
-		"GET /repos/owner/repo/git/refs/heads/main": func(w http.ResponseWriter, _ *http.Request) {
+		"GET /repos/owner/repo/git/ref/heads/main": func(w http.ResponseWriter, _ *http.Request) {
 			jsonResponse(w, http.StatusOK, GithubRefResponse{Object: RefObject{Sha: "base-sha"}})
 		},
 		"POST /repos/owner/repo/git/blobs": func(w http.ResponseWriter, _ *http.Request) {
