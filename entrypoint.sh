@@ -30,7 +30,7 @@ fi
 
 # pass force flag from FORCE_PUSH environment variable if it exists
 if [ -n "$FORCE_PUSH" ]; then
-  set -- "$@" -f
+  set -- "$@" "-f=$FORCE_PUSH"
 fi
 
 # pass tags flag from TAGS environment variable if it exists
@@ -45,7 +45,7 @@ fi
 
 # pass addNewFiles flag ADD_NEW_FILES environment variable if it exists
 if [ -n "$ADD_NEW_FILES" ]; then
-  set -- "$@" -a
+  set -- "$@" "-a=$ADD_NEW_FILES"
 fi
 
 # pass coauthors flag from COAUTHORS environment variable if it exists
