@@ -5,8 +5,10 @@ import (
 	"testing"
 )
 
+const notFoundBody = "not found"
+
 func TestGitHubAPIError_Error(t *testing.T) {
-	err := &GitHubAPIError{StatusCode: 404, Body: "not found"}
+	err := &GitHubAPIError{StatusCode: 404, Body: notFoundBody}
 	expected := "error calling github api, status code: 404, response: not found"
 
 	if err.Error() != expected {
@@ -15,7 +17,7 @@ func TestGitHubAPIError_Error(t *testing.T) {
 }
 
 func TestIsNotFound_404(t *testing.T) {
-	err := &GitHubAPIError{StatusCode: 404, Body: "not found"}
+	err := &GitHubAPIError{StatusCode: 404, Body: notFoundBody}
 	if !IsNotFound(err) {
 		t.Error("expected IsNotFound to return true for 404")
 	}
@@ -36,7 +38,7 @@ func TestIsNotFound_NonAPIError(t *testing.T) {
 }
 
 func TestIsNotFound_WrappedError(t *testing.T) {
-	apiErr := &GitHubAPIError{StatusCode: 404, Body: "not found"}
+	apiErr := &GitHubAPIError{StatusCode: 404, Body: notFoundBody}
 	wrapped := fmt.Errorf("wrapped: %w", apiErr)
 
 	if !IsNotFound(wrapped) {
