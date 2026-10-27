@@ -73,6 +73,32 @@ func TestRun_InvalidRepoFormat(t *testing.T) {
 	}
 }
 
+func TestRun_InvalidRepoFormat_DotNames(t *testing.T) {
+	for _, repository := range []string{"owner/.", "owner/..", "own.er/repo"} {
+		err := run([]string{flagRepo, repository}, func(string) string { return "" })
+		if err == nil {
+			t.Fatalf("expected error for invalid repo format %q", repository)
+		}
+
+		if !strings.Contains(err.Error(), "invalid repository format") {
+			t.Errorf("unexpected error for %q: %v", repository, err)
+		}
+	}
+}
+
+func TestRun_ValidRepoFormat_WithDots(t *testing.T) {
+	for _, repository := range []string{"arcezd/repo.example", "owner/.github", "owner/my.repo.name"} {
+		err := run([]string{flagRepo, repository}, func(string) string { return "" })
+		if err == nil {
+			t.Fatalf("expected error for missing app id with repo %q", repository)
+		}
+
+		if !strings.Contains(err.Error(), "GitHub app id is required") {
+			t.Errorf("unexpected error for %q: %v", repository, err)
+		}
+	}
+}
+
 func TestRun_ValidRepoFormat_MissingAppId(t *testing.T) {
 	err := run([]string{flagRepo, testRepo}, func(string) string { return "" })
 	if err == nil {

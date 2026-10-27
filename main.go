@@ -58,11 +58,12 @@ func run(args []string, getenv func(string) string) error {
 
 	if repository != "" {
 		// validate repository format with regex and extract owner and repo
-		validRepoPattern := `^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)$`
+		// repo names may contain dots (e.g. "my.repo"), but "." and ".." are reserved
+		validRepoPattern := `^([a-zA-Z0-9_-]+)/([a-zA-Z0-9._-]+)$`
 		re := regexp.MustCompile(validRepoPattern)
 		matches := re.FindStringSubmatch(repository)
 
-		if matches == nil {
+		if matches == nil || matches[2] == "." || matches[2] == ".." {
 			return fmt.Errorf("invalid repository format '%s', expected format is 'owner/repo'", repository)
 		}
 		// if valid, assign owner and repo
